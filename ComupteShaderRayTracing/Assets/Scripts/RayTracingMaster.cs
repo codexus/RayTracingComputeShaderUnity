@@ -8,6 +8,7 @@ public class RayTracingMaster : MonoBehaviour
     public Light DirectionalLight;
 
     private RenderTexture _target;
+    private RenderTexture _converged;
 
     private uint _currentSample = 0;
     private Material _addMaterial;
@@ -18,6 +19,8 @@ public class RayTracingMaster : MonoBehaviour
     public uint SpheresMax = 100;
     public float SpherePlacementRadius = 100.0f;
     private ComputeBuffer _sphereBuffer;
+
+    public int SphereSeed;
 
     private void Awake()
     {
@@ -37,6 +40,7 @@ public class RayTracingMaster : MonoBehaviour
 
     private void SetUpScene()
     {
+        Random.InitState(SphereSeed);
         List<Sphere> spheres = new List<Sphere>();
         // Add a number of random spheres
         for (int i = 0; i < SpheresMax; i++)
@@ -78,6 +82,7 @@ public class RayTracingMaster : MonoBehaviour
         RayTracingShader.SetMatrix("_CameraInverseProjection", _camera.projectionMatrix.inverse);
         RayTracingShader.SetVector("_PixelOffset", new Vector2(Random.value, Random.value));
         RayTracingShader.SetBuffer(0, "_Spheres", _sphereBuffer);
+        RayTracingShader.SetFloat("_Seed", Random.value);
     }
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
@@ -99,7 +104,9 @@ public class RayTracingMaster : MonoBehaviour
         if (_addMaterial == null)
             _addMaterial = new Material(Shader.Find("Hidden/AddShader"));
         _addMaterial.SetFloat("_Sample", _currentSample);
-        Graphics.Blit(_target, destination, _addMaterial);
+        //Graphics.Blit(_target, destination, _addMaterial);
+        Graphics.Blit(_target, _converged, _addMaterial);
+        Graphics.Blit(_converged, destination);
         _currentSample++;
 
 
@@ -117,6 +124,18 @@ public class RayTracingMaster : MonoBehaviour
             _target.enableRandomWrite = true;
             _target.Create();
         }
+
+        if (_converged == null || _converged.width != Screen.width || _converged.height != Screen.height)
+        {
+            // Release render texture if we already have one
+            if (_converged != null) _converged.Release();
+            // Get a render target for Ray Tracing
+            _converged = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+            _converged.enableRandomWrite = true;
+            _converged.Create();
+        }
+
+        
     }
 
     private void Update()
