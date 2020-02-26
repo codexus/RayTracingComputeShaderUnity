@@ -7,7 +7,8 @@ SamplerState sampler_SkyboxTexture;
 static const float PI = 3.14159265f;
 float2 _PixelOffset;
 float4 _DirectionalLight;
-
+float2 _Pixel;
+float _Seed;
 
 struct Ray
 {
@@ -34,6 +35,15 @@ struct RayHit
 	float3 albedo;
 	float3 specular;
 };
+
+
+
+float rand()
+{
+	float result = frac(sin(_Seed / 100.0f * dot(_Pixel, float2(12.9898f, 78.233f))) * 43758.5453f);
+	_Seed += 1.0f;
+	return result;
+}
 
 Ray CreateRay(float3 origin, float3 direction)
 {
@@ -66,6 +76,17 @@ Ray CreateCameraRay(float2 uv)
 	direction = mul(_CameraToWorld, float4(direction, 0.0f)).xyz;
 	direction = normalize(direction);
 	return CreateRay(origin, direction);
+}
+
+float3 SampleHemisphere(float3 normal)
+{
+	// Uniformly sample hemisphere direction
+	float cosTheta = rand();
+	float sinTheta = sqrt(max(0.0f, 1.0f - cosTheta * cosTheta));
+	float phi = 2 * PI * rand();
+	float3 tangentSpaceDir = float3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+	// Transform direction to world space
+	return mul(tangentSpaceDir, GetTangentSpace(normal));
 }
 
 void IntersectGroundPlane(Ray ray, inout RayHit bestHit)
@@ -138,7 +159,7 @@ float3 Shade(inout Ray ray, RayHit hit)
 {
 	if (hit.distance < 1.#INF)
 	{
-		float3 specular = float3(0.2f, 0.2f, 0.2f);
+		float3 specular = float3(0.1f, 0.1f, 0.1f); // reflection 
 		float3 albedo = float3(0.8f, 0.8f, 0.8f);
 		// Reflect the ray and multiply energy with specular reflection
 		ray.origin = hit.position + hit.normal * 0.001f;
@@ -171,7 +192,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 {
 	uint width, height;
 	Result.GetDimensions(width, height);
-
+	
+	_Pixel = id.xy;
+	
 	// Transform pixel to [-1,1] range
 	float2 uv = float2((id.xy + float2(0.5f, 0.5f)) / float2(width, height) * 2.0f - 1.0f);
 	// Get a ray for the UVs
