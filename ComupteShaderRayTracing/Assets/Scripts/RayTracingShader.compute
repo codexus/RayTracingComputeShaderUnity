@@ -37,6 +37,11 @@ struct RayHit
 };
 
 
+//It simply returns the result of the dot product, with an optional factor and then clamped to [0,1]:
+float sdot(float3 x, float3 y, float f = 1.0f)
+{
+	return saturate(dot(x, y) * f);
+}
 
 float rand()
 {
@@ -76,6 +81,18 @@ Ray CreateCameraRay(float2 uv)
 	direction = mul(_CameraToWorld, float4(direction, 0.0f)).xyz;
 	direction = normalize(direction);
 	return CreateRay(origin, direction);
+}
+
+float3x3 GetTangentSpace(float3 normal)
+{
+	// Choose a helper vector for the cross product
+	float3 helper = float3(1, 0, 0);
+	if (abs(normal.x) > 0.99f)
+		helper = float3(0, 0, 1);
+	// Generate vectors
+	float3 tangent = normalize(cross(normal, helper));
+	float3 binormal = normalize(cross(normal, tangent));
+	return float3x3(tangent, binormal, normal);
 }
 
 float3 SampleHemisphere(float3 normal)
@@ -159,12 +176,20 @@ float3 Shade(inout Ray ray, RayHit hit)
 {
 	if (hit.distance < 1.#INF)
 	{
+		ray.origin = hit.position + hit.normal * 0.001f;
+		ray.direction = SampleHemisphere(hit.normal);
+		ray.energy *= 2 * hit.albedo * sdot(hit.normal, ray.direction);
+		return 0.0f;
+
+		/*
+		// Diffuse shading
 		float3 specular = float3(0.1f, 0.1f, 0.1f); // reflection 
 		float3 albedo = float3(0.8f, 0.8f, 0.8f);
 		// Reflect the ray and multiply energy with specular reflection
 		ray.origin = hit.position + hit.normal * 0.001f;
 		ray.direction = reflect(ray.direction, hit.normal);
 		ray.energy *= specular;
+
 		// Return a diffuse-shaded color
 			// Shadow test ray
 		bool shadow = false;
@@ -175,6 +200,7 @@ float3 Shade(inout Ray ray, RayHit hit)
 			return float3(0.0f, 0.0f, 0.0f);
 		}
 		return saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * albedo;
+		*/
 	}
 	else
 	{
