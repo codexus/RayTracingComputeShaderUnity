@@ -313,9 +313,9 @@ MonoBehaviour:
   RayTracingShader: {fileID: 7200000, guid: 30010cae9c264774d923108bd249878e, type: 3}
   SkyboxTexture: {fileID: 2800000, guid: 469dd206402bc5640a16c8566e82aa6c, type: 3}
   DirectionalLight: {fileID: 705507994}
-  SphereRadius: {x: 3, y: 8}
-  SpheresMax: 100
-  SpherePlacementRadius: 100
+  SphereRadius: {x: 2, y: 3}
+  SpheresMax: 50
+  SpherePlacementRadius: 20
   SphereSeed: 67
 --- !u!114 &963194230
 MonoBehaviour:
@@ -331,6 +331,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   movementSpeed: 10
   fastMovementSpeed: 100
-  freeLookSensitivity: 3
+  freeLookSensitivity: 4
   zoomSensitivity: 10
   fastZoomSensitivity: 50
