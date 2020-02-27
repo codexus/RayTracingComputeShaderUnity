@@ -176,9 +176,14 @@ float3 Shade(inout Ray ray, RayHit hit)
 {
 	if (hit.distance < 1.#INF)
 	{
+	
 		ray.origin = hit.position + hit.normal * 0.001f;
+		float3 reflected = reflect(ray.direction, hit.normal);
 		ray.direction = SampleHemisphere(hit.normal);
-		ray.energy *= 2 * hit.albedo * sdot(hit.normal, ray.direction);
+		float3 diffuse = 2 * min(1.0f - hit.specular, hit.albedo);
+		float alpha = 200.0f;
+		float3 specular = hit.specular * (alpha + 2) * pow(sdot(ray.direction, reflected), alpha);
+		ray.energy *= (diffuse + specular) * sdot(hit.normal, ray.direction);
 		return 0.0f;
 
 		/*
