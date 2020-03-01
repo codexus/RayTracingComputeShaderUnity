@@ -193,9 +193,18 @@ float3 Shade(inout Ray ray, RayHit hit)
 		if (roulette < specChance)
 		{
 			// Specular reflection
+			/*
 			ray.origin = hit.position + hit.normal * 0.001f;
 			ray.direction = reflect(ray.direction, hit.normal);
 			ray.energy *= (1.0f / specChance) * hit.specular * sdot(hit.normal, ray.direction);
+			*/
+
+			// Specular reflection
+			float alpha = 15.0f;
+			ray.origin = hit.position + hit.normal * 0.001f;
+			ray.direction = SampleHemisphere(reflect(ray.direction, hit.normal), alpha);
+			float f = (alpha + 2) / (alpha + 1);
+			ray.energy *= (1.0f / specChance) * hit.specular * sdot(hit.normal, ray.direction, f);
 		}
 		else
 		{
