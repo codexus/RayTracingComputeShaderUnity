@@ -36,6 +36,10 @@ struct RayHit
 	float3 specular;
 };
 
+float energy(float3 color)
+{
+	return dot(color, 1.0f / 3.0f);
+}
 
 //It simply returns the result of the dot product, with an optional factor and then clamped to [0,1]:
 float sdot(float3 x, float3 y, float f = 1.0f)
@@ -115,8 +119,8 @@ void IntersectGroundPlane(Ray ray, inout RayHit bestHit)
 		bestHit.distance = t;
 		bestHit.position = ray.origin + t * ray.direction;
 		bestHit.normal = float3(0.0f, 1.0f, 0.0f);
-		bestHit.albedo = float3(0.0f, 1.0f, 0.0f);
-		bestHit.specular = float3(0.0f, 1.0f, 0.0f);
+		bestHit.albedo = float3(0.0f, 0.0f, 0.0f);
+		bestHit.specular = float3(1.0f, 1.0f, 1.0f);
 	}
 }
 
@@ -177,13 +181,29 @@ float3 Shade(inout Ray ray, RayHit hit)
 	if (hit.distance < 1.#INF)
 	{
 	
-		ray.origin = hit.position + hit.normal * 0.001f;
-		float3 reflected = reflect(ray.direction, hit.normal);
-		ray.direction = SampleHemisphere(hit.normal);
-		float3 diffuse = 2 * min(1.0f - hit.specular, hit.albedo);
-		float alpha = 200.0f;
-		float3 specular = hit.specular * (alpha + 2) * pow(sdot(ray.direction, reflected), alpha);
-		ray.energy *= (diffuse + specular) * sdot(hit.normal, ray.direction);
+		// Calculate chances of diffuse and specular reflection
+		hit.albedo = min(1.0f - hit.specular, hit.albedo);
+		float specChance = energy(hit.specular);
+		float diffChance = energy(hit.albedo);
+		float sum = specChance + diffChance;
+		specChance /= sum;
+		diffChance /= sum;
+		// Roulette-select the ray's path
+		float roulette = rand();
+		if (roulette < specChance)
+		{
+			// Specular reflection
+			ray.origin = hit.position + hit.normal * 0.001f;
+			ray.direction = reflect(ray.direction, hit.normal);
+			ray.energy *= (1.0f / specChance) * hit.specular * sdot(hit.normal, ray.direction);
+		}
+		else
+		{
+			// Diffuse reflection
+			ray.origin = hit.position + hit.normal * 0.001f;
+			ray.direction = SampleHemisphere(hit.normal);
+			ray.energy *= (1.0f / diffChance) * 2 * hit.albedo * sdot(hit.normal, ray.direction);
+		}
 		return 0.0f;
 
 		/*
