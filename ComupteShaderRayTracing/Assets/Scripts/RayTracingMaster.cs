@@ -6,6 +6,7 @@ public class RayTracingMaster : MonoBehaviour
     public ComputeShader RayTracingShader;
     public Texture SkyboxTexture;
     public Light DirectionalLight;
+    
 
     private RenderTexture _target;
     private RenderTexture _converged;
@@ -50,6 +51,9 @@ public class RayTracingMaster : MonoBehaviour
             sphere.radius = SphereRadius.x + Random.value * (SphereRadius.y - SphereRadius.x);
             Vector2 randomPos = Random.insideUnitCircle * SpherePlacementRadius;
             sphere.position = new Vector3(randomPos.x, sphere.radius, randomPos.y);
+            sphere.emission = new Vector3(0, 0, 0);
+            sphere.smoothness = randomPos.x;
+
             // Reject spheres that are intersecting others
             foreach (Sphere other in spheres)
             {
@@ -68,7 +72,7 @@ public class RayTracingMaster : MonoBehaviour
             continue;
         }
         // Assign to compute buffer
-        _sphereBuffer = new ComputeBuffer(spheres.Count, 40);
+        _sphereBuffer = new ComputeBuffer(spheres.Count, 56);
         //The magic number 40 in new ComputeBuffer(spheres.Count, 40) is the stride of our buffer, 
         //i.e. the byte size of one sphere in memory. 
         //To calculate it, count the number of floats in the Sphere struct and multiply it by float’s byte size (4 bytes)
@@ -155,5 +159,7 @@ public class RayTracingMaster : MonoBehaviour
         public float radius;
         public Vector3 albedo;
         public Vector3 specular;
+        public float smoothness;
+        public Vector3 emission;
     };
 }

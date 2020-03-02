@@ -23,8 +23,11 @@ struct Sphere
 	float radius;
 	float3 albedo;
 	float3 specular;
+	float smoothness;
+	float3 emission;
 };
 
+//Compute Buffer 4 × number of floats
 StructuredBuffer<Sphere> _Spheres;
 
 struct RayHit
@@ -34,6 +37,8 @@ struct RayHit
 	float3 normal;
 	float3 albedo;
 	float3 specular;
+	float smoothness;
+	float3 emission;
 };
 
 float energy(float3 color)
@@ -54,6 +59,11 @@ float rand()
 	return result;
 }
 
+float SmoothnessToPhongAlpha(float s)
+{
+	return pow(1000.0f, s * s);
+}
+
 Ray CreateRay(float3 origin, float3 direction)
 {
 	Ray ray;
@@ -71,6 +81,8 @@ RayHit CreateRayHit()
 	hit.normal = float3(0.0f, 0.0f, 0.0f);
 	hit.albedo = float3(0.0f, 0.0f, 0.0f);
 	hit.specular = float3(0.0f, 0.0f, 0.0f);
+	hit.emission = float3(0.0f, 0.0f, 0.0f);
+	hit.smoothness = 0.0f;
 	return hit;
 }
 
@@ -121,6 +133,8 @@ void IntersectGroundPlane(Ray ray, inout RayHit bestHit)
 		bestHit.normal = float3(0.0f, 1.0f, 0.0f);
 		bestHit.albedo = float3(0.5f, 0.5f, 0.5f);
 		bestHit.specular = float3(0.7f, 0.7f, 0.7f);
+		bestHit.emission = float3(0.1f, 0.1f, 0.1f);
+		bestHit.smoothness = 0.7f;
 	}
 }
 
@@ -141,6 +155,8 @@ void IntersectSphere(Ray ray, inout RayHit bestHit, Sphere sphere)
 		bestHit.normal = normalize(bestHit.position - sphere.position);
 		bestHit.albedo = sphere.albedo;
 		bestHit.specular = sphere.specular;
+		bestHit.emission = sphere.emission;
+		bestHit.smoothness = sphere.smoothness;
 	}
 }
 
@@ -200,7 +216,7 @@ float3 Shade(inout Ray ray, RayHit hit)
 			*/
 
 			// Specular reflection
-			float alpha = 15.0f;
+			float alpha = SmoothnessToPhongAlpha(hit.smoothness);
 			ray.origin = hit.position + hit.normal * 0.001f;
 			ray.direction = SampleHemisphere(reflect(ray.direction, hit.normal), alpha);
 			float f = (alpha + 2) / (alpha + 1);
@@ -213,7 +229,7 @@ float3 Shade(inout Ray ray, RayHit hit)
 			ray.direction = SampleHemisphere(hit.normal, 1.0f);
 			ray.energy *= (1.0f / diffChance) * hit.albedo;
 		}
-		return 0.0f;
+		return hit.emission;
 
 		/*
 		// Diffuse shading
