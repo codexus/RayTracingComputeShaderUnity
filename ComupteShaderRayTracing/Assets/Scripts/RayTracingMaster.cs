@@ -83,6 +83,19 @@ public class RayTracingMaster : MonoBehaviour
         _sphereBuffer.SetData(spheres);
     }
 
+    private static bool _meshObjectsNeedRebuilding = false;
+    private static List<RayTracingObject> _rayTracingObjects = new List<RayTracingObject>();
+    public static void RegisterObject(RayTracingObject obj)
+    {
+        _rayTracingObjects.Add(obj);
+        _meshObjectsNeedRebuilding = true;
+    }
+    public static void UnregisterObject(RayTracingObject obj)
+    {
+        _rayTracingObjects.Remove(obj);
+        _meshObjectsNeedRebuilding = true;
+    }
+
     private void SetShaderParameters()
     {
         RayTracingShader.SetTexture(0, "_SkyboxTexture", SkyboxTexture);
