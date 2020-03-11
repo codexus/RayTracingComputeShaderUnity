@@ -6,14 +6,13 @@ public class RayTracingMaster : MonoBehaviour
     public ComputeShader RayTracingShader;
     public Texture SkyboxTexture;
     public Light DirectionalLight;
-    
+    public int SphereSeed;
 
+    // Add Shader
     private RenderTexture _target;
     private RenderTexture _converged;
-
     private uint _currentSample = 0;
     private Material _addMaterial;
-
     private Camera _camera;
 
     public Vector2 SphereRadius = new Vector2(3.0f, 8.0f);
@@ -21,7 +20,14 @@ public class RayTracingMaster : MonoBehaviour
     public float SpherePlacementRadius = 100.0f;
     private ComputeBuffer _sphereBuffer;
 
-    public int SphereSeed;
+    private static bool _meshObjectsNeedRebuilding = false;
+    private static List<RayTracingObject> _rayTracingObjects = new List<RayTracingObject>();
+    private static List<MeshObject> _meshObjects = new List<MeshObject>();
+    private static List<Vector3> _vertices = new List<Vector3>();
+    private static List<int> _indices = new List<int>();
+    private ComputeBuffer _meshObjectBuffer;
+    private ComputeBuffer _vertexBuffer;
+    private ComputeBuffer _indexBuffer;
 
     private void Awake()
     {
@@ -83,8 +89,7 @@ public class RayTracingMaster : MonoBehaviour
         _sphereBuffer.SetData(spheres);
     }
 
-    private static bool _meshObjectsNeedRebuilding = false;
-    private static List<RayTracingObject> _rayTracingObjects = new List<RayTracingObject>();
+    
     public static void RegisterObject(RayTracingObject obj)
     {
         _rayTracingObjects.Add(obj);
@@ -179,4 +184,11 @@ public class RayTracingMaster : MonoBehaviour
         public float smoothness;
         public Vector3 emission;
     };
+
+    struct MeshObject
+    {
+        public Matrix4x4 localToWorldMatrix;
+        public int indices_offset;
+        public int indices_count;
+    }
 }

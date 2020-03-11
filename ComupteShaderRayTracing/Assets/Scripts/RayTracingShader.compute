@@ -10,6 +10,10 @@ float4 _DirectionalLight;
 float2 _Pixel;
 float _Seed;
 
+
+
+
+
 struct Ray
 {
 	float3 origin;
@@ -29,6 +33,18 @@ struct Sphere
 
 //Compute Buffer 4 × number of floats
 StructuredBuffer<Sphere> _Spheres;
+
+struct MeshObject
+{
+	float4x4 localToWorldMatrix;
+	int indices_offset;
+	int indices_count;
+};
+
+// Buffer for meshes
+StructuredBuffer<MeshObject> _MeshObjects;
+StructuredBuffer<float3> _Vertices;
+StructuredBuffer<int> _Indices;
 
 struct RayHit
 {
