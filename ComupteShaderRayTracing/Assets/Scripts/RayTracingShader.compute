@@ -139,6 +139,7 @@ float3 SampleHemisphere(float3 normal, float alpha)
 }
 
 static const float EPSILON = 1e-8;
+
 bool IntersectTriangle_MT97(Ray ray, float3 vert0, float3 vert1, float3 vert2,
 	inout float t, inout float u, inout float v)
 {
@@ -227,6 +228,32 @@ void IntersectSphere(Ray ray, inout RayHit bestHit, float4 sphere)
 	}
 }
 
+void IntersectMeshObject(Ray ray, inout RayHit bestHit, MeshObject meshObject)
+{
+	uint offset = meshObject.indices_offset;
+	uint count = offset + meshObject.indices_count;
+	for (uint i = offset; i < count; i += 3)
+	{
+		float3 v0 = (mul(meshObject.localToWorldMatrix, float4(_Vertices[_Indices[i]], 1))).xyz;
+		float3 v1 = (mul(meshObject.localToWorldMatrix, float4(_Vertices[_Indices[i + 1]], 1))).xyz;
+		float3 v2 = (mul(meshObject.localToWorldMatrix, float4(_Vertices[_Indices[i + 2]], 1))).xyz;
+		float t, u, v;
+		if (IntersectTriangle_MT97(ray, v0, v1, v2, t, u, v))
+		{
+			if (t > 0 && t < bestHit.distance)
+			{
+				bestHit.distance = t;
+				bestHit.position = ray.origin + t * ray.direction;
+				bestHit.normal = normalize(cross(v1 - v0, v2 - v0));
+				bestHit.albedo = 0.0f;
+				bestHit.specular = 0.65f;
+				bestHit.smoothness = 0.99f;
+				bestHit.emission = 0.0f;
+			}
+		}
+	}
+}
+/*
 RayHit Trace(Ray ray)
 {
 	RayHit bestHit = CreateRayHit();
@@ -256,6 +283,28 @@ RayHit Trace(Ray ray)
 		}
 	}
 
+	return bestHit;
+}
+*/
+
+RayHit Trace(Ray ray)
+{
+	RayHit bestHit = CreateRayHit();
+	uint count, stride, i;
+	// Trace ground plane
+	IntersectGroundPlane(ray, bestHit);
+	// Trace spheres
+	_Spheres.GetDimensions(count, stride);
+	for (i = 0; i < count; i++)
+	{
+		IntersectSphere(ray, bestHit, _Spheres[i]);
+	}
+	// Trace mesh objects
+	_MeshObjects.GetDimensions(count, stride);
+	for (i = 0; i < count; i++)
+	{
+		IntersectMeshObject(ray, bestHit, _MeshObjects[i]);
+	}
 	return bestHit;
 }
 
